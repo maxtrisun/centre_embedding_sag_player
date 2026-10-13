@@ -1,0 +1,23 @@
+{
+  "beam": 16,
+  "center": 9,
+  "check_nodes": 230436,
+  "check_ok": true,
+  "dag_nodes": 230436,
+  "depth": 2,
+  "mode": "decide",
+  "n": 9,
+  "nodes": 6971881,
+  "pinned_root": {
+    "c": 4,
+    "cell": 40,
+    "r": 4
+  },
+  "proven_leaves": 774808,
+  "raw_bytes": 4262490,
+  "raw_bytes_limit": 1048576000,
+  "sha256_dag": "4695ae8cdb52c7846b2a5eae90e65780445ff8d0d3f4b5c66eb3961612aaf2e9",
+  "threads": 8,
+  "time_s": 244.4510691165924,
+  "witness": 40
+}

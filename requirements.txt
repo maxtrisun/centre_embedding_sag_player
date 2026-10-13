@@ -1,0 +1,2 @@
+# Runtime: Python 3.11 or 3.13 on Linux x86_64, matching build/d11py*.so.
+# No pip packages required for interact / auto-play.

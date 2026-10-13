@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Local run outputs
+artifacts/auto_play_summary.json
+*.log
+.DS_Store

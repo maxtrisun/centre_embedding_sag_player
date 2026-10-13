@@ -1,0 +1,29 @@
+{
+  "beam": 16,
+  "budget": 4,
+  "carrier_n": 84,
+  "center": 6,
+  "check_nodes": 696944,
+  "check_ok": true,
+  "dag_nodes": 696944,
+  "depth": 2,
+  "k": 6,
+  "kind": "merge",
+  "mode": "prove",
+  "must_export": true,
+  "nodes": 6208595,
+  "oversized_forced": false,
+  "pinned_root": {
+    "cell": 3485
+  },
+  "proven_leaves": 301002,
+  "raw_bytes": 13221762,
+  "raw_bytes_limit": 1048576000,
+  "residuals": 32,
+  "sha256_dag": "427decdb9af6d441ab3b6bd518550123d1c82e108ce4c8cf9d2ac530914608df",
+  "threads": 8,
+  "time_s": 477.0660891532898,
+  "tokens": 33,
+  "window": 18,
+  "witness": 3485
+}

@@ -1,0 +1,94 @@
+[
+  {
+    "n": 6,
+    "status": "exported",
+    "raw_bytes": 928274,
+    "dag_nodes": 49542,
+    "path": "artifacts/finite/n06"
+  },
+  {
+    "n": 7,
+    "status": "exported",
+    "raw_bytes": 530531,
+    "dag_nodes": 28143,
+    "path": "artifacts/finite/n07"
+  },
+  {
+    "n": 8,
+    "status": "exported",
+    "raw_bytes": 713158,
+    "dag_nodes": 37965,
+    "path": "artifacts/finite/n08"
+  },
+  {
+    "n": 9,
+    "status": "exported",
+    "raw_bytes": 4262490,
+    "dag_nodes": 230436,
+    "path": "artifacts/finite/n09"
+  },
+  {
+    "n": 10,
+    "status": "exported",
+    "raw_bytes": 7685405,
+    "dag_nodes": 412654,
+    "path": "artifacts/finite/n10"
+  },
+  {
+    "n": 11,
+    "status": "exported",
+    "raw_bytes": 14149667,
+    "dag_nodes": 759568,
+    "path": "artifacts/finite/n11"
+  },
+  {
+    "n": 12,
+    "status": "exported",
+    "raw_bytes": 34300807,
+    "dag_nodes": 1850136,
+    "path": "artifacts/finite/n12"
+  },
+  {
+    "n": 13,
+    "status": "exported",
+    "raw_bytes": 976804,
+    "dag_nodes": 51570,
+    "path": "artifacts/finite/n13"
+  },
+  {
+    "n": 14,
+    "status": "exported",
+    "raw_bytes": 1212703,
+    "dag_nodes": 63205,
+    "path": "artifacts/finite/n14"
+  },
+  {
+    "n": 15,
+    "status": "exported",
+    "raw_bytes": 1587634,
+    "dag_nodes": 83588,
+    "path": "artifacts/finite/n15"
+  },
+  {
+    "n": 16,
+    "status": "exported",
+    "raw_bytes": 1929679,
+    "dag_nodes": 100421,
+    "path": "artifacts/finite/n16"
+  },
+  {
+    "n": 17,
+    "status": "exported",
+    "raw_bytes": 2827556,
+    "dag_nodes": 148652,
+    "path": "artifacts/finite/n17"
+  },
+  {
+    "kind": "merge",
+    "n_min": 18,
+    "status": "exported",
+    "raw_bytes": 13221762,
+    "dag_nodes": 696944,
+    "path": "artifacts/embed/merge"
+  }
+]
