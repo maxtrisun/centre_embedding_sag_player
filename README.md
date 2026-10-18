@@ -1,4 +1,4 @@
-# Centre-Embedding SAG Player
+[n6.webm](https://github.com/user-attachments/assets/ce239a10-b83d-48c2-94f3-9722a6767d3c)# Centre-Embedding SAG Player
 
 人机 / 自动对弈入口：用已导出的 **P1 证书**（有限 DAG 与 merge+Σ）体验与校验。
 
@@ -26,15 +26,16 @@ does not embed video.
 
 **n = 6 (finite DAG)** — [`media/n6.webm`](media/n6.webm)
 
-<video src="media/n6.webm" controls width="720">
-  <a href="media/n6.webm">media/n6.webm</a>
-</video>
+https://github.com/user-attachments/assets/2d0c7a8c-f659-4a26-8f9c-e3f319da4103
+
+
 
 **n = 30 (merge + Σ)** — [`media/n30.webm`](media/n30.webm)
 
-<video src="media/n30.webm" controls width="720">
-  <a href="media/n30.webm">media/n30.webm</a>
-</video>
+https://github.com/user-attachments/assets/40e7782c-031e-4ede-bffd-5c99ae188a85
+
+
+
 
 ---
 
