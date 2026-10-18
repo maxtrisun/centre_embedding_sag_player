@@ -21,20 +21,20 @@ uses a prebuilt Python extension `d11py`.
 
 ## Screencasts
 
-Human vs certificate (you = P2). Open the files locally if your Markdown viewer
-does not embed video.
+Human vs certificate demos: the certificate plays first as P1 (X),
+and the human plays second as P2 (O).
 
-**n = 6 (finite DAG)** — [`media/n6.webm`](media/n6.webm)
+Play the videos below, or use the download links to watch them locally.
 
-<video src="media/n6.webm" controls width="720">
-  <a href="media/n6.webm">media/n6.webm</a>
-</video>
+**n = 6 (finite DAG)** — [Download video](media/n6.webm)
 
-**n = 30 (merge + Σ)** — [`media/n30.webm`](media/n30.webm)
+https://github.com/user-attachments/assets/e0dde768-c099-4913-a4fc-5e83241f7b17
 
-<video src="media/n30.webm" controls width="720">
-  <a href="media/n30.webm">media/n30.webm</a>
-</video>
+
+**n = 30 (merge + Σ)** — [Download video](media/n30.webm)
+
+https://github.com/user-attachments/assets/bedc8b9f-151a-4a69-a8e8-30d2c18ebb45
+
 
 ---
 
@@ -50,10 +50,14 @@ does not embed video.
 | `build/d11py*.so` | Prebuilt Python extension (Linux x86_64) |
 | `media/` | Screencast demos (`n6.webm`, `n30.webm`) |
 
-Game (short): `n×n` board; axis-aligned squares only (no tilted); smallest win is
-the four corners of a `2×2` block. For `n ≥ 18`, certificate P1 only plays inside
-a fixed centre `6×6` block and reads the board through an online map Σ onto the
-merge certificate.
+Players take turns placing one stone on an empty cell of an `n×n` board.
+P1 moves first. The first player to occupy all four corners of an
+axis-aligned square wins. Tilted squares do not count, and the smallest
+winning square is a `2×2` block.
+
+For `n ≥ 18`, certificate-controlled P1 plays only inside a fixed central
+`6×6` block, while P2 may play anywhere on the board. The online map Σ
+translates the real position into the merge-certificate view.
 
 ---
 
@@ -73,9 +77,13 @@ ls build/d11py.cpython-*-x86_64-linux-gnu.so
 python3 -c "import sys; sys.path.insert(0,'build'); import d11py; print('d11py OK', d11py.__file__)"
 ```
 
-If import fails (wrong Python version, macOS, or non-x86_64), this stage-1
-binary package will not run on your machine. Engine source and rebuild
-instructions will arrive in a later open-source stage.
+The bundled extensions require Linux x86_64 and a matching CPython
+3.11 or 3.13 interpreter. They cannot be loaded by native Windows
+or macOS Python. Windows users need a compatible Linux environment,
+such as WSL.
+
+Engine source and rebuild instructions are planned for a later
+release stage.
 
 With conda, create a matching Python and run (use `bash`, not `sh`):
 
@@ -111,6 +119,9 @@ cd scripts
 
 Move input at `move>`:
 
+Rows and columns are zero-based: the top-left cell is `(0, 0)`.
+For example, `2 3` selects the third row and fourth column.
+
 | Input | Meaning |
 |-------|---------|
 | `row col` | e.g. `2 3` |
@@ -124,6 +135,11 @@ Legend: `X`=P1, `O`=P2, `.`=empty, `[ ]`=last move.
 
 ## Player strategies
 
+The shipped certificates provide strategies for P1 (the first player).
+By default, interactive mode uses certificate-controlled P1 against
+a human P2. Batch mode uses certificate-controlled P1 against
+a pruned-random P2.
+
 Both sides implement `choose(view) -> legal_cell`. CLI specs:
 
 | Spec | Typical seat | Behaviour |
@@ -131,7 +147,7 @@ Both sides implement `choose(view) -> legal_cell`. CLI specs:
 | `cert` | P1 (default) | Finite DAG if `n<18`, else merge+Σ |
 | `dag:PATH` | P1 | Explicit finite `proof.dag` |
 | `embed:PATH` | P1 | Explicit merge DAG (`n≥18`) |
-| `pruned-random` | P2 (batch default) | Random among sound-pruned replies (stays on DAG) |
+| `pruned-random` | P2 (batch default) | Random among engine-pruned replies; falls back to legal moves if none are returned |
 | `random` | P2 | Uniform legal (may leave proof tree) |
 | `human` | either | Terminal input |
 | `script:PATH.py` | usually P2 | Module exporting `choose(view) -> int` |
@@ -152,10 +168,11 @@ def choose(view) -> int:
     return list(view.legal)[0]
 ```
 
-**Review tip:** use `--p2 pruned-random` so play stays on the exported certificate
-tree. Free `random` / aggressive human moves can leave the DAG; finite `DagPlayer`
-then fails loud (by design). That means “off the checkable certificate path”, not
-a silent rewrite of the theorem.
+**Certificate coverage:** use `--p2 pruned-random` for certificate-oriented
+replay. Unrestricted random or human moves may reach positions outside
+the exported DAG. If the certificate player cannot provide a move,
+play stops with an error. This error is not a win or loss under the
+game rules.
 
 More detail: [`doc/play.md`](doc/play.md), [`artifacts/VERIFY.md`](artifacts/VERIFY.md),
 [`doc/sigma_spec.md`](doc/sigma_spec.md).
