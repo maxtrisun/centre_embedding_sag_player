@@ -1,7 +1,5 @@
 # Centre-Embedding SAG Player
 
-人机 / 自动对弈入口：用已导出的 **P1 证书**（有限 DAG 与 merge+Σ）体验与校验。
-
 Play and check exported **Player-1 certificates** for the centre-embedding
 square-achievement game (SAG): interactive human vs certificate, and batch
 auto-play.
