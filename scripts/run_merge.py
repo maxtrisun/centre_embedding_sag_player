@@ -23,6 +23,7 @@ import argparse
 import json
 import sys
 import time
+from functools import lru_cache
 from typing import Dict, List, Tuple
 
 from experiment_lib import DATA_DIR, write_json
@@ -38,7 +39,8 @@ from trace_geometry import (
 import d11py
 
 
-def residual_m1_traces(k: int) -> List[Trace]:
+@lru_cache(maxsize=8)
+def _residual_m1_traces(k: int) -> Tuple[Trace, ...]:
     out = []
     for r, vs in enumerate_traces(k).items():
         for V in vs:
@@ -47,7 +49,12 @@ def residual_m1_traces(k: int) -> List[Trace]:
             if window_completions(k, V):
                 continue
             out.append(tuple(sorted(V)))
-    return out
+    return tuple(out)
+
+
+def residual_m1_traces(k: int) -> List[Trace]:
+    # Each instance gets its own mutable list; cache only immutable geometry.
+    return list(_residual_m1_traces(k))
 
 
 class MergeInstance:
