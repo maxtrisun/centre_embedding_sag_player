@@ -8,3 +8,4 @@ venv/
 artifacts/auto_play_summary.json
 *.log
 .DS_Store
+media/upload-for-github/

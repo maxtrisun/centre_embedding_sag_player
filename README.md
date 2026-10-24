@@ -20,19 +20,27 @@ uses a prebuilt Python extension `d11py`.
 ## Screencasts
 
 Human vs certificate demos: the certificate plays first as P1 (X),
-and the human plays second as P2 (O).
+and the human plays second as P2 (O). Both demos use merge + Σ
+(`n ≥ 18`) with the large-board viewport (`--board-view center`).
 
 Play the videos below, or use the download links to watch them locally.
 
-**n = 6 (finite DAG)** — [Download video](media/n6.webm)
-
-https://github.com/user-attachments/assets/e0dde768-c099-4913-a4fc-5e83241f7b17
-
-
 **n = 30 (merge + Σ)** — [Download video](media/n30.webm)
 
-https://github.com/user-attachments/assets/bedc8b9f-151a-4a69-a8e8-30d2c18ebb45
+https://github.com/user-attachments/assets/2a024a2f-6349-4eed-a706-1d337f66b163
 
+
+**n = 1000 (merge + Σ)** — [Download video](media/n1000.webm)
+
+https://github.com/user-attachments/assets/a53b9b8f-9ff5-4618-ab65-747ad976ce98
+
+Suggested matching commands:
+
+```bash
+cd scripts
+./d11_interact.sh --n 30 --board-view center
+./d11_interact.sh --n 1000 --board-view center
+```
 
 ---
 
@@ -46,7 +54,7 @@ https://github.com/user-attachments/assets/bedc8b9f-151a-4a69-a8e8-30d2c18ebb45
 | `artifacts/finite/` | Finite-n proof DAGs |
 | `artifacts/embed/merge/` | Merge DAG for all `n ≥ 18` |
 | `build/d11py*.so` | Prebuilt Python extension (Linux x86_64) |
-| `media/` | Screencast demos (`n6.webm`, `n30.webm`) |
+| `media/` | Screencast demos (`n30.webm`, `n1000.webm`) |
 
 Players take turns placing one stone on an empty cell of an `n×n` board.
 P1 moves first. The first player to occupy all four corners of an
@@ -105,6 +113,9 @@ cd scripts
 # Human vs certificate (you = P2 / O, cert = P1 / X)
 ./d11_interact.sh --n 6
 ./d11_interact.sh --n 18          # merge + Σ; any n≥18 works (e.g. 25)
+./d11_interact.sh --n 30 --board-view center    # large-board viewport
+./d11_interact.sh --n 1000 --board-view center
+./d11_interact.sh --n 30 --timing               # stderr per-move timings
 
 # Single auto game (JSON): P1=cert, P2=pruned-random
 ./d11_play.sh --n 6
@@ -115,19 +126,59 @@ cd scripts
 ./run_auto_play.sh --sizes 6,7,8 --games 3 --seed 0
 ```
 
-Move input at `move>`:
+### Move input
 
-Rows and columns are zero-based: the top-left cell is `(0, 0)`.
-For example, `2 3` selects the third row and fourth column.
+At the `move>` prompt, rows and columns are zero-based: the top-left
+cell is `(0, 0)`. For example, `2 3` selects the third row and fourth
+column. Input always uses these real board coordinates (never overview
+tile indices).
 
 | Input | Meaning |
 |-------|---------|
-| `row col` | e.g. `2 3` |
+| `row col` | place a stone, e.g. `2 3` |
 | `cell` | flat index `0 … n²-1` (row-major) |
 | `rXcY` | e.g. `r2c3` |
-| `legal` / `hist` / `quit` | helpers |
+| `legal` | list legal cells |
+| `hist` | move history |
+| `help` | list commands |
+| `quit` | exit |
 
 Legend: `X`=P1, `O`=P2, `.`=empty, `[ ]`=last move.
+
+### Board views (large `n`)
+
+Large boards do not fit a terminal as a full cell grid. Prefer a
+**viewport** of real cells around the centre or last move; avoid relying
+on the aggregated overview unless you want a whole-board summary.
+
+Start with a viewport:
+
+```bash
+./d11_interact.sh --n 30 --board-view center
+./d11_interact.sh --n 1000 --board-view center
+./d11_interact.sh --n 30 --board-view last
+./d11_interact.sh --n 30 --timing          # choose / win-check timings on stderr
+```
+
+Or switch at `move>` (redraw only; does **not** consume a turn):
+
+| Command | Display |
+|---------|---------|
+| `view auto` | full grid if it fits; otherwise overview tiles |
+| `view overview` | whole board as aggregated tiles |
+| `view center` | real cells around the board centre |
+| `view last` | real cells around the last move |
+| `view 12 13` | real cells around row 12, column 13 |
+| `view full` | force full grid (may overflow the terminal) |
+
+- `12 13` places a stone; `view 12 13` only changes the camera.
+- Cell views label the visible row/column range and count hidden stones.
+- Overview tiles may cover many cells: `X` = P1 only, `O` = P2 only,
+  `*` = both, `.` = empty; brackets mark the tile that contains the last
+  move. Row labels are ranges; column labels are tile starts.
+
+`--board-view` choices: `auto` (default), `full`, `overview`, `center`,
+`last`. Details: [`doc/play.md`](doc/play.md).
 
 ---
 

@@ -9,6 +9,7 @@ online rules. Pin-rebuild rewrites only the outside ledger.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from functools import lru_cache
 from typing import Dict, List, Optional, Set, Tuple
 
 from run_merge import MergeInstance
@@ -20,6 +21,23 @@ from trace_geometry import (
 )
 
 Coord = Tuple[int, int]
+
+
+@lru_cache(maxsize=8)
+def _trace_family(k):
+    # Immutable values preserve enumeration order and cannot leak mutations.
+    family = enumerate_traces(k)
+    return tuple(tuple(tuple(sorted(v)) for v in family[r]) for r in (1, 2))
+
+
+@lru_cache(maxsize=4096)
+def _completions(k, trace):
+    return tuple(tuple(s) for s in window_completions(k, trace))
+
+
+@lru_cache(maxsize=4096)
+def _external_squares(k, trace):
+    return tuple(external_squares_for_trace(k, trace))
 
 
 @dataclass
@@ -125,7 +143,7 @@ def rebuild_ledger(state: SigmaState) -> None:
     if state.mode in ("residual", "pin") and state.armed_V is not None:
         V = tuple(sorted(state.armed_V))
         # residual if no window completion
-        comps = window_completions(state.k, V)
+        comps = _completions(state.k, V)
         if not comps:
             y = state.mi.y.get(V)
             if y is None:
@@ -202,16 +220,16 @@ def find_completable_arming(
         return None
     outs = _outside_rel(state)
     matches: List[Tuple[Tuple[Coord, ...], List[Coord], Tuple[int, int, int]]] = []
-    fam = enumerate_traces(state.k)
-    for r in (1, 2):
-        for Vraw in fam[r]:
+    fam = _trace_family(state.k)
+    for group in fam:
+        for Vraw in group:
             V = tuple(sorted(Vraw))
             if not set(V).issubset(occupied):
                 continue
-            comps = window_completions(state.k, V)
+            comps = _completions(state.k, V)
             if not comps:
                 continue
-            for a, b, d in external_squares_for_trace(state.k, V):
+            for a, b, d in _external_squares(state.k, V):
                 corners = set(square(a, b, d))
                 if all(o in corners for o in outs):
                     matches.append((V, list(comps[0]), (a, b, d)))
@@ -231,7 +249,7 @@ def update_arming(state: SigmaState, p2_cells_in_window_local: Set[Coord]) -> No
     if pin is not None and len(state.outside_cells) >= 2:
         state.mode = "pin"
         state.armed_V = tuple(sorted(pin))
-        comps = window_completions(state.k, state.armed_V)
+        comps = _completions(state.k, state.armed_V)
         state.armed_S = list(comps[0]) if comps else None
         rebuild_ledger(state)
         return

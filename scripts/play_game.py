@@ -19,6 +19,7 @@ import argparse
 import json
 import random
 import sys
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, List, Optional, Protocol, Sequence, Tuple
@@ -33,6 +34,7 @@ import d11py  # noqa: E402
 
 from run_merge import MergeInstance  # noqa: E402
 from sigma import SigmaState, rebuild_ledger, update_arming  # noqa: E402
+from play_support import PositionHistory, TerminalBoard, square_winner_after  # noqa: E402
 
 P1, P2 = 0, 1
 SYM = {0: ".", 1: "X", 2: "O"}  # empty / P1 / P2
@@ -145,13 +147,10 @@ class PrunedRandomPlayer:
         self.gs = d11py.GameSpec(n, n)
         self.cfg = d11py.VerifierConfig()
         self.cfg.game = self.gs
+        self._position_sync = PositionHistory(lambda: d11py.Position(self.gs))
 
     def choose(self, view: GameView) -> int:
-        pos = d11py.Position(self.gs)
-        turn = P1
-        for mv in view.history:
-            pos.place(turn, mv)
-            turn = 1 - turn
+        pos = self._position_sync.sync((i % 2, mv) for i, mv in enumerate(view.history))
         moves = list(d11py.pruned_moves(pos, self.cfg))
         if not moves:
             moves = list(view.legal)
@@ -205,7 +204,10 @@ def parse_move_token(s: str, n: int, legal: Sequence[int]) -> Optional[int]:
         try:
             body = s[1:]
             r_s, c_s = body.split("c", 1)
-            cell = rc_cell(n, int(r_s), int(c_s))
+            r, c = int(r_s), int(c_s)
+            if not (0 <= r < n and 0 <= c < n):
+                return None
+            cell = rc_cell(n, r, c)
             return cell if cell in legal else None
         except ValueError:
             return None
@@ -218,7 +220,10 @@ def parse_move_token(s: str, n: int, legal: Sequence[int]) -> Optional[int]:
         return cell if cell in legal else None
     if len(parts) == 2:
         try:
-            cell = rc_cell(n, int(parts[0]), int(parts[1]))
+            r, c = int(parts[0]), int(parts[1])
+            if not (0 <= r < n and 0 <= c < n):
+                return None
+            cell = rc_cell(n, r, c)
         except ValueError:
             return None
         return cell if cell in legal else None
@@ -231,18 +236,21 @@ class HumanPlayer:
     def __init__(self, label: str = "you", *, show_board: bool = True) -> None:
         self.label = label
         self.show_board = show_board
+        self.renderer = None
 
     def choose(self, view: GameView) -> int:
+        if self.renderer is None:
+            self.renderer = TerminalBoard()
         if self.show_board:
             last = view.history[-1] if view.history else None
             print()
-            print(render_board(view.n, view.board, last=last))
+            print(self.renderer.render(view.n, view.board, last=last))
         side = view.to_move + 1
         print(
             f"\n[{self.label}] P{side} to move | empties={len(view.legal)} | "
             f"plies={len(view.history)}"
         )
-        print("  enter: <row> <col>  |  <cell>  |  legal  |  hist  |  quit")
+        print("  enter: <row> <col> | <cell> | view center | help | quit")
         while True:
             try:
                 raw = input("move> ").strip()
@@ -259,7 +267,16 @@ class HumanPlayer:
                 print("  rXcY      e.g. r2c3")
                 print("  legal     list legal cells")
                 print("  hist      move history")
+                print("  view auto|overview|center|last|full, or view ROW COL")
                 print("  quit")
+                continue
+            if cmd == "view" or cmd.startswith("view "):
+                try:
+                    self.renderer.set_view(raw[4:].strip() or "auto", view.n)
+                    print(self.renderer.render(view.n, view.board,
+                        last=view.history[-1] if view.history else None))
+                except ValueError as exc:
+                    print(f"  {exc}")
                 continue
             if cmd == "legal":
                 coords = [f"{c}({c // view.n},{c % view.n})" for c in view.legal]
@@ -297,18 +314,15 @@ class DagPlayer:
         self.n = n
         self.gs = d11py.GameSpec(n, n)
         self.pos = d11py.Position(self.gs)
+        self._position_sync = PositionHistory(lambda: d11py.Position(self.gs), self.pos)
         self.pinned = pinned
         self._plies = 0
 
     def choose(self, view: GameView) -> int:
         if view.n != self.n:
             raise RuntimeError("n mismatch")
-        # Rebuild engine position from history every call (authoritative).
-        self.pos = d11py.Position(self.gs)
-        turn = P1
-        for mv in view.history:
-            self.pos.place(turn, mv)
-            turn = 1 - turn
+        # History is authoritative; append only to an unchanged native prefix.
+        self.pos = self._position_sync.sync((i % 2, mv) for i, mv in enumerate(view.history))
         self._plies = len(view.history)
 
         key = self.pos.hash()
@@ -342,6 +356,7 @@ class EmbedPlayer:
         self.state = SigmaState(k=6, n=n, mi=MergeInstance(6))
         self.merge_gs = self.state.mi.game_spec(tokens=True, budget=True)
         self.merge_pos = d11py.Position(self.merge_gs)
+        self._position_sync = PositionHistory(lambda: d11py.Position(self.merge_gs), self.merge_pos)
         self.real_gs = d11py.GameSpec(n, n)
         self.history: List[int] = []
 
@@ -358,7 +373,7 @@ class EmbedPlayer:
 
     def _rebuild_merge(self, view: GameView, board: List[int]) -> None:
         """Place history into merge_pos using the current Σ ledger."""
-        self.merge_pos = d11py.Position(self.merge_gs)
+        mapped = []
         for i, cell in enumerate(view.history):
             side = P1 if (i % 2 == 0) else P2
             if side == P1:
@@ -368,16 +383,20 @@ class EmbedPlayer:
                     and self.state.k <= loc[1] < 2 * self.state.k
                 ):
                     raise RuntimeError(f"P1 move {cell} outside centre C")
-                self.merge_pos.place(P1, self.state.mi.g(loc))
+                mapped.append((P1, self.state.mi.g(loc)))
             elif self.state.in_window(cell):
                 mcell = self.state.real_to_merge_window_cell(cell)
                 assert mcell is not None
-                self.merge_pos.place(P2, mcell)
+                mapped.append((P2, mcell))
             else:
                 mcell = self.state.ledger.get(cell)
                 if mcell is None:
                     raise RuntimeError(f"no ledger for outside cell {cell}")
-                self.merge_pos.place(P2, mcell)
+                mapped.append((P2, mcell))
+
+        # A changed Sigma ledger changes earlier mapped moves and therefore
+        # forces a full rebuild; otherwise only new moves are appended.
+        self.merge_pos = self._position_sync.sync(mapped)
 
     def _lookup_merge_move(self) -> Optional[int]:
         """OR-edge move, else TW/cert witnessing move; None if neither."""
@@ -459,7 +478,15 @@ def play(
     announce: bool = False,
     p1_name: str = "P1",
     p2_name: str = "P2",
+    board_renderer: Optional[TerminalBoard] = None,
+    report_timing: bool = False,
 ) -> GameResult:
+    if n <= 0 or (max_plies is not None and max_plies < 0):
+        raise ValueError("n must be positive and max_plies nonnegative")
+    viewer = board_renderer or TerminalBoard()
+    for player in (p1, p2):
+        if isinstance(player, HumanPlayer):
+            player.renderer = viewer
     board = [0] * (n * n)
     history: List[int] = []
     limit = max_plies if max_plies is not None else n * n
@@ -471,19 +498,17 @@ def play(
         if center_only_p1:
             off = (n - 6) // 2
             print(f"  P1 confined to centre 6×6 window [{off}..{off+5}]²")
-        print(render_board(n, board))
+        print(viewer.render(n, board))
 
     for ply in range(limit):
         side = P1 if ply % 2 == 0 else P2
-        legal = [i for i, v in enumerate(board) if v == 0]
         if center_only_p1 and side == P1:
             k = 6
             off = (n - k) // 2
-            legal = [
-                i
-                for i in legal
-                if off <= i // n < off + k and off <= i % n < off + k
-            ]
+            legal = [r*n+c for r in range(max(0, off), min(n, off+k))
+                     for c in range(max(0, off), min(n, off+k)) if board[r*n+c] == 0]
+        else:
+            legal = [i for i, v in enumerate(board) if v == 0]
         if not legal:
             return GameResult(None, "no_moves", history, ply)
 
@@ -491,8 +516,10 @@ def play(
         mover = p1 if side == P1 else p2
         is_human = isinstance(mover, HumanPlayer)
         if announce and not is_human:
-            print(f"\n... {names[side]} thinking ...")
+            print(f"\n... {names[side]} thinking ...", flush=True)
+        started = time.perf_counter() if report_timing else 0.0
         mv = mover.choose(view)
+        choose_s = time.perf_counter()-started if report_timing else 0.0
         if mv not in legal:
             return GameResult(3 - (side + 1), f"illegal_move_by_{side+1}", history, ply)
         board[mv] = side + 1
@@ -500,9 +527,13 @@ def play(
         r, c = cell_rc(n, mv)
         if announce:
             print(f"\n{names[side]} plays cell {mv}  (row={r}, col={c})")
-            print(render_board(n, board, last=mv))
+            print(viewer.render(n, board, last=mv))
 
-        w = terminal_winner(n, board)
+        started = time.perf_counter() if report_timing else 0.0
+        w = square_winner_after(n, board, mv)
+        if report_timing:
+            print(f"[timing] P{side+1} choose={choose_s:.6f}s "
+                  f"win_check={time.perf_counter()-started:.6f}s", file=sys.stderr, flush=True)
         if w is not None:
             if announce:
                 print(f"\n*** {names[w - 1]} wins by square ***")
@@ -567,6 +598,9 @@ def main() -> int:
     )
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--max-plies", type=int, default=0)
+    ap.add_argument("--board-view", choices=TerminalBoard.MODES, default="auto",
+                    help="interactive board: auto fits the terminal; full preserves the wide grid")
+    ap.add_argument("--timing", action="store_true", help="report initialization and per-move timings on stderr")
     ap.add_argument(
         "--list",
         action="store_true",
@@ -603,6 +637,8 @@ def main() -> int:
 
     if args.n <= 0:
         ap.error("--n is required unless --list")
+    if args.max_plies < 0:
+        ap.error("--max-plies must be nonnegative")
 
     interactive = bool(args.interactive)
     # Resolve player specs: interactive defaults to cert (P1) vs you (P2).
@@ -615,8 +651,13 @@ def main() -> int:
         p1_spec = args.p1 or "cert"
         p2_spec = args.p2 or ("human" if interactive else "pruned-random")
 
+    if interactive:
+        print("Loading players and certificates...", file=sys.stderr, flush=True)
+    started = time.perf_counter()
     p1 = parse_player(p1_spec, args.n, args.seed)
     p2 = parse_player(p2_spec, args.n, args.seed + 1)
+    if args.timing:
+        print(f"[timing] initialization={time.perf_counter()-started:.6f}s", file=sys.stderr, flush=True)
     if interactive:
         for hp in (p1, p2):
             if isinstance(hp, HumanPlayer):
@@ -644,6 +685,8 @@ def main() -> int:
         announce=interactive,
         p1_name=p1_name,
         p2_name=p2_name,
+        board_renderer=TerminalBoard(args.board_view),
+        report_timing=args.timing,
     )
 
     payload = {
