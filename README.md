@@ -25,23 +25,20 @@ and the human plays second as P2 (O). Both demos use merge + Σ
 
 Play the videos below, or use the download links to watch them locally.
 
-**n = 100 (merge + Σ)** — [Download video](media/n100.webm)
+**n = 30 (merge + Σ)** — [Download video](media/n30.webm)
 
-<video src="media/n100.webm" controls width="720">
-  <a href="media/n100.webm">media/n100.webm</a>
-</video>
+https://github.com/user-attachments/assets/2a024a2f-6349-4eed-a706-1d337f66b163
+
 
 **n = 1000 (merge + Σ)** — [Download video](media/n1000.webm)
 
-<video src="media/n1000.webm" controls width="720">
-  <a href="media/n1000.webm">media/n1000.webm</a>
-</video>
+https://github.com/user-attachments/assets/a53b9b8f-9ff5-4618-ab65-747ad976ce98
 
 Suggested matching commands:
 
 ```bash
 cd scripts
-./d11_interact.sh --n 100 --board-view center
+./d11_interact.sh --n 30 --board-view center
 ./d11_interact.sh --n 1000 --board-view center
 ```
 
@@ -57,7 +54,7 @@ cd scripts
 | `artifacts/finite/` | Finite-n proof DAGs |
 | `artifacts/embed/merge/` | Merge DAG for all `n ≥ 18` |
 | `build/d11py*.so` | Prebuilt Python extension (Linux x86_64) |
-| `media/` | Screencast demos (`n100.webm`, `n1000.webm`) |
+| `media/` | Screencast demos (`n30.webm`, `n1000.webm`) |
 
 Players take turns placing one stone on an empty cell of an `n×n` board.
 P1 moves first. The first player to occupy all four corners of an
@@ -116,7 +113,8 @@ cd scripts
 # Human vs certificate (you = P2 / O, cert = P1 / X)
 ./d11_interact.sh --n 6
 ./d11_interact.sh --n 18          # merge + Σ; any n≥18 works (e.g. 25)
-./d11_interact.sh --n 100 --board-view center   # large-board viewport
+./d11_interact.sh --n 30 --board-view center    # large-board viewport
+./d11_interact.sh --n 1000 --board-view center
 ./d11_interact.sh --n 30 --timing               # stderr per-move timings
 
 # Single auto game (JSON): P1=cert, P2=pruned-random
@@ -156,8 +154,9 @@ on the aggregated overview unless you want a whole-board summary.
 Start with a viewport:
 
 ```bash
-./d11_interact.sh --n 100 --board-view center
-./d11_interact.sh --n 100 --board-view last
+./d11_interact.sh --n 30 --board-view center
+./d11_interact.sh --n 1000 --board-view center
+./d11_interact.sh --n 30 --board-view last
 ./d11_interact.sh --n 30 --timing          # choose / win-check timings on stderr
 ```
 
