@@ -23,12 +23,19 @@ Human vs certificate demos: the certificate plays first as P1 (X),
 and the human plays second as P2 (O). Both demos use merge + Σ
 (`n ≥ 18`) with the large-board viewport (`--board-view center`).
 
-Download and play locally (files under `media/`):
+Play the videos below, or use the download links to watch them locally.
 
-| Demo | File |
-|------|------|
-| **n = 100** (merge + Σ) | [media/n100.webm](media/n100.webm) |
-| **n = 1000** (merge + Σ) | [media/n1000.webm](media/n1000.webm) |
+**n = 100 (merge + Σ)** — [Download video](media/n100.webm)
+
+<video src="media/n100.webm" controls width="720">
+  <a href="media/n100.webm">media/n100.webm</a>
+</video>
+
+**n = 1000 (merge + Σ)** — [Download video](media/n1000.webm)
+
+<video src="media/n1000.webm" controls width="720">
+  <a href="media/n1000.webm">media/n1000.webm</a>
+</video>
 
 Suggested matching commands:
 
